@@ -24,7 +24,7 @@ public class Solution: Solvable {
     try block()
     let end = DispatchTime.now()
     let nanoTime = end.uptimeNanoseconds - start.uptimeNanoseconds
-    return Double(nanoTime) / 1_000_000_000
+    return Double(nanoTime) / 1_000_000
   }
 
   func run() {
@@ -32,7 +32,7 @@ public class Solution: Solvable {
       let time = try time {
         print("First part: \(try firstPart())")
       }
-      print("First part took \(time) seconds to run")
+      print("First part took \(time)ms to run")
     } catch LauncherError.notImplemented {
       print("First part has not been implemented yet")
     } catch {
@@ -45,7 +45,7 @@ public class Solution: Solvable {
       let time = try time {
         print("Second part: \(try secondPart())")
       }
-      print("Second part took \(time) seconds to run")
+      print("Second part took \(time)ms to run")
     } catch LauncherError.notImplemented {
       print("Second part has not been implemented yet")
     } catch {
