@@ -4,68 +4,63 @@ import Foundation
 struct Calibration {
   let line: String
 
-  /// Creates a new instance from a given input line.
-  /// - Parameter line: The line to be calibrated.
-  init(_ line: String) {
-    self.line = line.trimmingCharacters(in: .whitespacesAndNewlines)
-  }
-
-  /// Compute the calibration value for a given digit input.
-  ///
-  /// Returns the value of concatenating the first and last digit of a string.
-  /// If there are no digits in the input, zero is returned.
-  ///
-  /// - Parameter input: string to be processed
-  /// - Returns: the integer obtained by concatenating the first and last digit.
-  private func valueWithDigits(_ input: String) -> Int {
-    let digits = input.filter("0123456789".contains)
-    guard digits.count > 0 else { return 0 }
-    return Int(digits.prefix(1) + digits.suffix(1))!
-  }
+  private let numberLiterals = [
+    "zero": "0",
+    "one": "1",
+    "two": "2",
+    "three": "3",
+    "four": "4",
+    "five": "5",
+    "six": "6",
+    "seven": "7",
+    "eight": "8",
+    "nine": "9",
+  ]
 
   /// Returns the calibration value.
   ///
   /// The calibration value seemed to be computed using the first and the last
   /// digit present in the original input line and concatenating them together.
   ///
+  /// This solution use two pointers, one to the beginning and one to the end of
+  /// the string.
+  ///
   /// - Returns: The calibration value.
   func wrongValue() -> Int {
-    return valueWithDigits(line)
-  }
+    var first: String?
+    var second: String?
 
-  /// Substitutes number literals with their digit representation.
-  ///
-  /// - Parameter input: The input to be processed.
-  /// - Returns: The input with the literal values substituted.
-  private func processInput(_ input: String) -> String {
-    let numberLiterals = [
-      ("zero", "0"),
-      ("one", "1"),
-      ("two", "2"),
-      ("three", "3"),
-      ("four", "4"),
-      ("five", "5"),
-      ("six", "6"),
-      ("seven", "7"),
-      ("eight", "8"),
-      ("nine", "9"),
-    ]
+    let digits = numberLiterals.values
+    for offset in 0..<line.count {
+      if first == nil {
+        // Check the beginning of the string for the first character
+        let candidate = line.dropFirst(offset)
 
-    var unprocessed = input
-    var digits = [String]()
-
-    while !unprocessed.isEmpty {
-      for (literal, digit) in numberLiterals {
-        if unprocessed.hasPrefix(digit) || unprocessed.hasPrefix(literal) {
-          digits.append(digit)
-          break
+        checkFirst: for digit in digits {
+          if candidate.hasPrefix(digit) {
+            first = .some(digit)
+            break checkFirst
+          }
         }
       }
 
-      unprocessed = String(unprocessed.dropFirst())
+      if second == nil {
+        // Check the end of the string for the second character
+        let candidate = line.dropLast(offset)
+
+        checkSecond: for digit in digits {
+          if candidate.hasSuffix(digit) {
+            second = .some(digit)
+            break checkSecond
+          }
+        }
+      }
+
+      if first != nil && second != nil { break }
     }
 
-    return digits.joined()
+    let value = (first ?? "0") + (second ?? "0")
+    return Int(value)!
   }
 
   /// Returns the calibration value.
@@ -75,10 +70,45 @@ struct Calibration {
   /// However, the input line may contain number literals (for instance, "one"
   /// or "1").
   ///
+  /// This solution use two pointers, one to the beginning and one to the end of
+  /// the string.
+  ///
   /// - Returns: the calibration value.
   func correctValue() -> Int {
-    let processed = processInput(line)
-    return valueWithDigits(processed)
+
+    var first: String?
+    var second: String?
+
+    for offset in 0..<line.count {
+      if first == nil {
+        // Check the beginning of the string for the first character
+        let candidate = line.dropFirst(offset)
+
+        checkFirst: for (literal, digit) in numberLiterals {
+          if candidate.hasPrefix(digit) || candidate.hasPrefix(literal) {
+            first = .some(digit)
+            break checkFirst
+          }
+        }
+      }
+
+      if second == nil {
+        // Check the end of the string for the second character
+        let candidate = line.dropLast(offset)
+
+        checkSecond: for (literal, digit) in numberLiterals {
+          if candidate.hasSuffix(digit) || candidate.hasSuffix(literal) {
+            second = .some(digit)
+            break checkSecond
+          }
+        }
+      }
+
+      if first != nil && second != nil { break }
+    }
+
+    let value = (first ?? "0") + (second ?? "0")
+    return Int(value)!
   }
 }
 
@@ -97,8 +127,7 @@ struct Input {
     let calibrations =
       contents
       .split(separator: "\n")
-      .filter { !$0.isEmpty }
-      .map { line in Calibration(String(line)) }
+      .map { line in Calibration(line: String(line)) }
 
     self.init(calibrations)
   }
