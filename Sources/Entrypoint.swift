@@ -6,7 +6,7 @@ struct AdventOfCodeLauncher: ParsableCommand {
   public var day: String? = nil
 
   @Option(help: "Path to the input file to be solved")
-  public var inputPath: String? = nil
+  public var input: String? = nil
 
   public mutating func run() throws {
     print("Welcome to Advent of Code 2023!")
@@ -20,6 +20,7 @@ struct AdventOfCodeLauncher: ParsableCommand {
 
     let problem: Solvable =
       switch day {
+      case "1", "01": Day01(inputPath: input)
       case .none, .some(_):
         throw LauncherError.invalidDay(
           "The day entered is not valid or has not been implemented yet"
