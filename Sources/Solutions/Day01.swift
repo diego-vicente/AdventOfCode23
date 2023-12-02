@@ -1,7 +1,7 @@
 import Foundation
 
 /// A struct representing a calibration step from the input.
-struct Calibration {
+private struct Calibration {
   let line: String
 
   private let numberLiterals = [
