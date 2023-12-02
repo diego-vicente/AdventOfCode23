@@ -19,18 +19,17 @@ private enum Cube {
 
 /// A cube set is a set of cubes, of different colors.
 private struct CubeSet {
-  let cubes: [(Cube, Int)]
+  let cubes: [Cube: Int]
 
   /// The input is a comma separated list of cube colors and their count.
   /// - Parameter input: The input to be parsed.
   /// - Returns: A cube set instance.
   static func fromInput(_ input: String) -> CubeSet {
-    var cubes = [(Cube, Int)]()
+    var cubes = [Cube: Int]()
     for display in input.split(separator: ",") {
       if let result = try? #/(\d+) (\w+)/#.firstMatch(in: display) {
         let cube = Cube.fromInput(String(result.2))
-        let count = Int(result.1)!
-        cubes.append((cube, count))
+        cubes[cube] = Int(result.1)!
       } else {
         fatalError("Could not parse input: \(input)")
       }
@@ -118,7 +117,7 @@ private struct Game {
       }
     }
 
-    return CubeSet(cubes: minSet.map { ($0.key, $0.value) })
+    return CubeSet(cubes: minSet)
   }
 }
 
