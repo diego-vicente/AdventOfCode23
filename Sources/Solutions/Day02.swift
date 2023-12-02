@@ -49,6 +49,11 @@ private struct CubeSet {
   func isPossible(maxCubes: [Cube: Int]) -> Bool {
     cubes.allSatisfy { (cube, count) in count <= maxCubes[cube]! }
   }
+
+  /// The power of a cube set is all the cubes multiplied together.
+  func power() -> Int {
+    cubes.map { (cube, count) in count }.reduce(1, *)
+  }
 }
 
 /// A game is a sequence of cube sets.
@@ -95,6 +100,25 @@ private struct Game {
   /// - Returns: whether the game is possible or not.
   func isPossible(maxCubes: [Cube: Int]) -> Bool {
     sets.allSatisfy { $0.isPossible(maxCubes: maxCubes) }
+  }
+
+  /// Return the minimum possible cube set.
+  ///
+  /// For a given game, its minimum possible set is the set of cubes that
+  /// that allow the game to be possible.
+  ///
+  /// - Returns: the minimum possible cube set.
+  func minPossible() -> CubeSet {
+    var minSet: [Cube: Int] = [.red: 0, .green: 0, .blue: 0]
+    for cubes in sets {
+      for (color, count) in cubes.cubes {
+        if minSet[color]! < count {
+          minSet[color] = count
+        }
+      }
+    }
+
+    return CubeSet(cubes: minSet.map { ($0.key, $0.value) })
   }
 }
 
@@ -151,5 +175,22 @@ public class Day02: Solution {
       .reduce(0, +)
 
     return String(result)
+  }
+
+  /// Computes the solution for the second part of Day 2.
+  ///
+  /// The solution for the second part is adding the power of all the minimum
+  /// possible cube sets for each game.
+  ///
+  /// - Returns: the solution as a string.
+  override func secondPart() throws -> String {
+    let input = Input(path: inputPath)
+
+    let result = input.games
+      .map { $0.minPossible().power() }
+      .reduce(0, +)
+
+    return String(result)
+
   }
 }
