@@ -21,6 +21,7 @@ struct AdventOfCodeLauncher: ParsableCommand {
     let problem: Solvable =
       switch day {
       case "1", "01": Day01(inputPath: input)
+      case "2", "02": Day02(inputPath: input)
       case .none, .some(_):
         throw LauncherError.invalidDay(
           "The day entered is not valid or has not been implemented yet"
