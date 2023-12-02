@@ -113,7 +113,7 @@ struct Calibration {
 }
 
 /// The input is an array of `Calibration` values.
-struct Input {
+private struct Input {
   let calibrations: [Calibration]
 
   init(_ calibrations: [Calibration]) {
