@@ -2,18 +2,18 @@ import Foundation
 
 // A point represents a position in the grid.
 private struct Point: Hashable, CustomStringConvertible {
-  let x: Int
-  let y: Int
+  let col: Int
+  let row: Int
 
-  var description: String { return "(\(x), \(y))" }
+  var description: String { return "(\(col), \(row))" }
 
   static func == (lhs: Point, rhs: Point) -> Bool {
-    return lhs.x == rhs.x && lhs.y == rhs.y
+    return lhs.col == rhs.col && lhs.row == rhs.row
   }
 
   func hash(into hasher: inout Hasher) {
-    hasher.combine(x)
-    hasher.combine(y)
+    hasher.combine(col)
+    hasher.combine(row)
   }
 
   /// Returns the neighbors of a point.
@@ -22,13 +22,13 @@ private struct Point: Hashable, CustomStringConvertible {
   func neighbors(length: Int = 1) -> Set<Point> {
     var neighbors = Set<Point>()
 
-    for y in (self.y - 1)...(self.y + 1) {
-      for x in (self.x - 1)...(self.x + length) {
-        if y == self.y && x >= self.x && x <= self.x + length - 1 {
+    for row in (self.row - 1)...(self.row + 1) {
+      for col in (self.col - 1)...(self.col + length) {
+        if row == self.row && col >= self.col && col <= self.col + length - 1 {
           // Skp the point (or number) itself
           continue
         }
-        neighbors.insert(Point(x: x, y: y))
+        neighbors.insert(Point(col: col, row: row))
       }
     }
 
@@ -83,28 +83,28 @@ private struct Input {
 
     var numbers: [Point: EngineNumber] = [:]
     var symbols: [Point: EngineSymbol] = [:]
-    for (y, line) in contents.split(separator: "\n").enumerated() {
+    for (row, line) in contents.split(separator: "\n").enumerated() {
       var numberPartials: [String] = []
-      for (x, character) in line.enumerated() {
+      for (col, character) in line.enumerated() {
         if character.isNumber {
           numberPartials.append(String(character))
-          if x < line.count - 1 { continue }
+          if col < line.count - 1 { continue }
         } else if character != "." {
-          let start = Point(x: x, y: y)
+          let start = Point(col: col, row: row)
           symbols[start] = EngineSymbol(symbol: character, start: start)
         }
 
         if !numberPartials.isEmpty {
           // Take into account the case where the number is at the end of the
           // line.
-          var start = Point(x: x, y: y)
-          if x == line.count - 1 && character.isNumber {
-            start = Point(x: x - numberPartials.count + 1, y: y)
+          var start = Point(col: col, row: row)
+          if col == line.count - 1 && character.isNumber {
+            start = Point(col: col - numberPartials.count + 1, row: row)
           } else {
-            start = Point(x: x - numberPartials.count, y: y)
+            start = Point(col: col - numberPartials.count, row: row)
           }
 
-          // Add the existing number to the list
+          // Add the ecolisting number to the list
           let number = Int(numberPartials.joined())!
           numbers[start] = EngineNumber(number: number, start: start)
           numberPartials = []
