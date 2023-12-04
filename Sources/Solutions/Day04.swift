@@ -23,15 +23,16 @@ private struct Card {
     }
   }
 
-  /// The winner numbers of a card are winning numbers that were scratched.
-  var winners: Set<Int> {
+  /// The matching numbers of a card are winning numbers that were scratched.
+  var matchingNumbers: Set<Int> {
     winningNumbers.intersection(scratchNumbers)
   }
 
   /// The number of points is 1 if there is one winner, and gets doubled every
   /// time a winning number appears in the scratched ones.
   var points: Int {
-    winners.isEmpty ? 0 : Int(exactly: pow(Double(2), Double(winners.count - 1)))!
+    matchingNumbers.isEmpty
+      ? 0 : Int(exactly: pow(Double(2), Double(matchingNumbers.count - 1)))!
   }
 
 }
@@ -78,5 +79,34 @@ public class Day04: Solution {
     let input = Input(path: inputPath)
     let result = input.cards.map { $0.points }.reduce(0, +)
     return String(result)
+  }
+
+  /// Computes the solution for the second part of Day 4.
+  ///
+  /// To compute the solution, we keep track of the number of copies of each
+  /// card in a dictionary and we iterate the original sequence to update it
+  /// accordingly. Eventually, we simple count the number of copies in the
+  /// dictionary.
+  ///
+  /// - Returns: the solution as a string.
+  override func secondPart() throws -> String {
+    let input = Input(path: inputPath)
+
+    var copies = [Int: Int]()
+    for card in input.cards {
+      // There is always one copy of the card provided
+      copies[card.id, default: 0] += 1
+
+      guard !card.matchingNumbers.isEmpty else { continue }
+
+      // If the card has at least a winner, add the copies to the following
+      // cards. Take into account that there can be several copies of the
+      // current card.
+      for offset in 1...card.matchingNumbers.count {
+        copies[card.id + offset, default: 0] += copies[card.id]!
+      }
+    }
+
+    return String(copies.values.reduce(0, +))
   }
 }
