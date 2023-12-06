@@ -50,10 +50,12 @@ struct Range {
 
 /// A mapping tracks offset to integer ranges.
 private struct Mapping<From: Element, To: Element> {
-  var offsets: [(Range, Int)]
+  var forwards: [(Range, Int)]
+  var backwards: [(Range, Int)]
 
   init() {
-    self.offsets = []
+    self.forwards = []
+    self.backwards = []
   }
 
   /// Adds a range to the mapping.
@@ -63,9 +65,19 @@ private struct Mapping<From: Element, To: Element> {
   ///   - destination: The destination element ID.
   ///   - steps: The number of steps between the source and destination.
   mutating func addRange(from source: Int, to destination: Int, steps: Int) {
-    let offset = destination - source
-    let end = source + steps - 1
-    offsets.append((Range(from: source, to: end), offset))
+    forwards.append(
+      (
+        Range(from: source, to: source + steps - 1),
+        destination - source
+      )
+    )
+
+    backwards.append(
+      (
+        Range(from: destination, to: destination + steps - 1),
+        source - destination
+      )
+    )
   }
 
   /// Returns the destination element for a given source element.
@@ -73,12 +85,36 @@ private struct Mapping<From: Element, To: Element> {
   /// - Parameter key: The source element.
   /// - Returns: The destination element.
   func get(key: From) -> To {
-    for (range, offset) in offsets {
+    for (range, offset) in forwards {
       if range.contains(key.id) {
         return To(id: key.id + offset)
       }
     }
     return To(id: key.id)
+  }
+
+  /// Returns the source element for a given destination element.
+  ///
+  /// - Parameter key: The destination element.
+  /// - Returns: The source element.
+  func undo(key: To) -> From {
+    for (range, offset) in backwards {
+      if range.contains(key.id) {
+        return From(id: key.id + offset)
+      }
+    }
+    return From(id: key.id)
+  }
+
+  func getSourceCuts() -> Set<From> {
+    var cuts: Set<From> = []
+
+    cuts.insert(From(id: 0))
+    for (range, _) in forwards {
+      cuts.insert(From(id: range.from))
+      cuts.insert(From(id: range.to))
+    }
+    return cuts
   }
 }
 
@@ -86,6 +122,7 @@ private struct Mapping<From: Element, To: Element> {
 /// a seed.
 private struct Almanac {
   let seeds: [Seed]
+  var seedRanges: [Range]
   var soilMap: Mapping<Seed, Soil>
   var fertilizerMap: Mapping<Soil, Fertilizer>
   var waterMap: Mapping<Fertilizer, Water>
@@ -96,6 +133,7 @@ private struct Almanac {
 
   init(
     seeds: [Seed],
+    seedRanges: [Range],
     soilMap: Mapping<Seed, Soil>,
     fertilizerMap: Mapping<Soil, Fertilizer>,
     waterMap: Mapping<Fertilizer, Water>,
@@ -105,6 +143,7 @@ private struct Almanac {
     locationMap: Mapping<Humidity, Location>
   ) {
     self.seeds = seeds
+    self.seedRanges = seedRanges
     self.soilMap = soilMap
     self.fertilizerMap = fertilizerMap
     self.waterMap = waterMap
@@ -120,7 +159,16 @@ private struct Almanac {
     self.seeds = chunks[0]
       .split(separator: ": ")[1]
       .split(separator: " ")
-      .map({ Seed(id: Int($0)!) })
+      .map { Seed(id: Int($0)!) }
+
+    self.seedRanges = []
+    for i in stride(from: 0, to: self.seeds.count - 1, by: 2) {
+      self.seedRanges.append(
+        Range(
+          from: self.seeds[i].id,
+          to: self.seeds[i].id + self.seeds[i + 1].id)
+      )
+    }
 
     // TODO: is there a way to abstract the following code?
     self.soilMap = Mapping<Seed, Soil>()
@@ -237,6 +285,86 @@ class Day05: Solution {
     let input = Input(path: inputPath)
 
     let result = input.almanac.seeds
+      .map { input.almanac.soilMap.get(key: $0) }
+      .map { input.almanac.fertilizerMap.get(key: $0) }
+      .map { input.almanac.waterMap.get(key: $0) }
+      .map { input.almanac.lightMap.get(key: $0) }
+      .map { input.almanac.temperatureMap.get(key: $0) }
+      .map { input.almanac.humidityMap.get(key: $0) }
+      .map { input.almanac.locationMap.get(key: $0) }
+      .map { $0.id }
+      .min()!
+
+    return String(result)
+  }
+
+  /// Computes the solution for the second part of Day 5.
+  ///
+  /// The solution for part two reduces the number of possible solutions by only
+  /// evaluating where the intervals change; by evaluating the cuts of each type
+  /// and translating them backwards. Then, we simply have to evaluate all those
+  /// points that lie within the seed ranges and return the minimum.
+  override func secondPart() throws -> String {
+    let input = Input(path: inputPath)
+
+    // Carry the interval cuts backwards
+    let humidityCuts = Set(
+      input.almanac.locationMap
+        .getSourceCuts()
+    )
+
+    let temperatureCuts = Set(
+      input.almanac.humidityMap
+        .getSourceCuts()
+    ).union(
+      humidityCuts
+        .map { input.almanac.humidityMap.undo(key: $0) }
+    )
+
+    let lightCuts = Set(
+      input.almanac.temperatureMap
+        .getSourceCuts()
+    ).union(
+      temperatureCuts
+        .map { input.almanac.temperatureMap.undo(key: $0) }
+    )
+
+    let waterCuts = Set(
+      input.almanac.lightMap
+        .getSourceCuts()
+    ).union(
+      lightCuts
+        .map { input.almanac.lightMap.undo(key: $0) }
+    )
+
+    let fertilizerCuts = Set(
+      input.almanac.waterMap
+        .getSourceCuts()
+    ).union(
+      waterCuts
+        .map { input.almanac.waterMap.undo(key: $0) }
+    )
+
+    let soilCuts = Set(
+      input.almanac.fertilizerMap
+        .getSourceCuts()
+    ).union(
+      fertilizerCuts
+        .map { input.almanac.fertilizerMap.undo(key: $0) }
+    )
+
+    let seedCuts = Set(
+      input.almanac.soilMap
+        .getSourceCuts()
+    ).union(
+      soilCuts
+        .map { input.almanac.soilMap.undo(key: $0) }
+    )
+
+    // Evaluate the start points within the seed ranges
+    let result =
+      seedCuts
+      .filter { c in input.almanac.seedRanges.contains { r in r.contains(c.id) } }
       .map { input.almanac.soilMap.get(key: $0) }
       .map { input.almanac.fertilizerMap.get(key: $0) }
       .map { input.almanac.waterMap.get(key: $0) }
