@@ -38,12 +38,14 @@ private struct Race {
   }
 }
 
-/// The input is a representation of the grid.
+/// The input can be several races or a single one.
 private struct Input {
   let races: [Race]
+  let race: Race
 
-  init(races: [Race]) {
+  init(races: [Race], race: Race) {
     self.races = races
+    self.race = race
   }
 
   /// Creates an input instance from a given file path.
@@ -68,7 +70,11 @@ private struct Input {
     let races = zip(times, records)
       .map { Race(time: $0, record: $1) }
 
-    self.init(races: races)
+    let totalTime = Int(parts[0].filter { $0.isNumber })!
+    let totalRecord = Int(parts[1].filter { $0.isNumber })!
+    let race = Race(time: totalTime, record: totalRecord)
+
+    self.init(races: races, race: race)
   }
 }
 
@@ -94,4 +100,14 @@ public class Day06: Solution {
     return String(result)
   }
 
+  /// Computes the solution for the second part of Day 6.
+  ///
+  /// The second part simply understand the whole input as a single race.
+  ///
+  /// - Returns: the solution as a string.
+  override func secondPart() throws -> String {
+    let input = Input(path: inputPath)
+    let result = input.race.victoryWidth
+    return String(result)
+  }
 }
