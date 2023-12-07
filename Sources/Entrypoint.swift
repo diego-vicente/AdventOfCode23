@@ -25,6 +25,7 @@ struct AdventOfCodeLauncher: ParsableCommand {
       case "3", "03": Day03(inputPath: input)
       case "4", "04": Day04(inputPath: input)
       case "5", "05": Day05(inputPath: input)
+      case "6", "06": Day06(inputPath: input)
       case .none, .some(_):
         throw LauncherError.invalidDay(
           "The day entered is not valid or has not been implemented yet"
