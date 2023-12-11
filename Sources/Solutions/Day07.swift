@@ -7,12 +7,12 @@ extension Card {
   /// Parse a string input into a card.
   /// - Parameter input: The string input to be parsed.
   /// - Returns: The parsed card.
-  fileprivate static func fromInput(_ input: String) -> Card {
+  fileprivate static func fromInput(_ input: String, withJokers: Bool = false) -> Card {
     switch input {
     case "A": return 14
     case "K": return 13
     case "Q": return 12
-    case "J": return 11
+    case "J": return withJokers ? 0 : 11
     case "T": return 10
     default: return Int(input)!
     }
@@ -38,24 +38,37 @@ enum Result: Int, Comparable {
 private struct Hand: Comparable {
   let bid: Int
   let cards: [Card]
+  let withJokers: Bool
 
-  init(bid: Int, cards: [Card]) {
+  init(bid: Int, cards: [Card], withJokers: Bool) {
     self.bid = bid
     self.cards = cards
+    self.withJokers = withJokers
   }
 
-  init(input: String) {
+  init(input: String, withJokers: Bool = false) {
     let parts = input.split(separator: " ")
     let bid = Int(parts[1])!
-    let cards = parts[0].map { Card.fromInput(String($0)) }
-    self.init(bid: bid, cards: cards)
+    let cards = parts[0].map { Card.fromInput(String($0), withJokers: withJokers) }
+    self.init(bid: bid, cards: cards, withJokers: withJokers)
   }
 
   /// The result of the hand.
   var result: Result {
-    let counts = Dictionary(grouping: cards, by: { $0 })
+    // Cards that are not a joker
+    let regularCards = cards.filter { $0 != 0 }
+
+    var counts = Dictionary(grouping: regularCards, by: { $0 })
       .mapValues { $0.count }
       .values.sorted()
+
+    if counts.isEmpty {
+      // With JJJJJ, we could be left with no cards
+      counts = [5]
+    } else {
+      // Add the jokers (if any) to the top count
+      counts[counts.count - 1] += 5 - regularCards.count
+    }
 
     return switch counts {
     case [5]: .fiveOfAKind
@@ -97,13 +110,13 @@ private struct Input {
 
   /// Creates an input instance from a given file path.
   /// - Parameter path: The path to the file containing the input.
-  init(path: String) {
+  init(path: String, withJokers: Bool = false) {
     let contents = try! String(contentsOfFile: path)
 
     let hands =
       contents
       .split(separator: "\n")
-      .map { Hand(input: String($0)) }
+      .map { Hand(input: String($0), withJokers: withJokers) }
 
     self.init(hands: hands)
   }
@@ -127,6 +140,25 @@ public class Day07: Solution {
   /// - Returns: the solution as a string.
   override func firstPart() throws -> String {
     let input = Input(path: inputPath)
+
+    let result = input
+      .hands.sorted()
+      .enumerated()
+      .map { (rank, hand) in hand.bid * (rank + 1) }
+      .reduce(0, +)
+
+    return String(result)
+  }
+
+  /// Computes the solution for the second part of Day 7.
+  ///
+  /// The second part is the same as the first one, but with the addition of
+  /// jokers. The jokers are represented by the letter J, and they can be used
+  /// to replace any card.
+  ///
+  /// - Returns: the solution as a string.
+  override func secondPart() throws -> String {
+    let input = Input(path: inputPath, withJokers: true)
 
     let result = input
       .hands.sorted()
